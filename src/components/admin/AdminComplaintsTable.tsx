@@ -17,6 +17,7 @@ import {
   Bot,
   ShieldAlert,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +110,7 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
   const [resolvedPhotoUrl, setResolvedPhotoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -130,6 +132,20 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
     if (error) console.error('fetchComplaints error:', error.message);
     setComplaints((data as any) ?? []);
     setLoading(false);
+  };
+
+  const handleDelete = async (complaintId: string) => {
+    if (!window.confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) return;
+    setDeletingId(complaintId);
+    const { error } = await supabase.from('complaints').delete().eq('id', complaintId);
+    setDeletingId(null);
+    if (error) {
+      toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Complaint deleted', description: 'Complaint has been permanently removed.' });
+    fetchComplaints();
+    onUpdate();
   };
 
   const handleAIVerify = async (complaint: Complaint) => {
@@ -192,17 +208,57 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
     setLoadingAssignments(false);
   };
 
-  const openAssignDialog = (complaint: Complaint) => {
+  const openAssignDialog = async (complaint: Complaint) => {
     setSelectedComplaint(complaint);
     setAddEmployeeId("");
     setNewDeadline(complaint.deadline?.slice(0, 16) ?? "");
     setCurrentAssignments([]);
     setIsAssignDialogOpen(true);
-    fetchAssignments(complaint.id);
+    setLoadingAssignments(true);
+
+    // Fetch existing manual assignments
+    const { data: existing } = await supabase
+      .from('complaint_assignments')
+      .select(`id, employee_id, assigned_at, emp:employee_id (name, employee_id, job, zone)`)
+      .eq('complaint_id', complaint.id)
+      .order('assigned_at');
+
+    const assignments = (existing as any) ?? [];
+
+    // If no manual assignments yet but there's an auto-assigned employee,
+    // insert them into complaint_assignments so the dialog shows them correctly.
+    if (assignments.length === 0 && complaint.assigned_employee_id) {
+      await supabase
+        .from('complaint_assignments')
+        .insert({ complaint_id: complaint.id, employee_id: complaint.assigned_employee_id });
+      // Re-fetch after sync
+      const { data: synced } = await supabase
+        .from('complaint_assignments')
+        .select(`id, employee_id, assigned_at, emp:employee_id (name, employee_id, job, zone)`)
+        .eq('complaint_id', complaint.id)
+        .order('assigned_at');
+      setCurrentAssignments((synced as any) ?? []);
+    } else {
+      setCurrentAssignments(assignments);
+    }
+    setLoadingAssignments(false);
   };
 
   const handleAddAssignment = async () => {
     if (!selectedComplaint || !addEmployeeId) return;
+
+    // Check for duplicate in fresh DB query (not stale state)
+    const { data: existing } = await supabase
+      .from('complaint_assignments')
+      .select('id')
+      .eq('complaint_id', selectedComplaint.id)
+      .eq('employee_id', addEmployeeId)
+      .maybeSingle();
+    if (existing) {
+      toast({ title: "Already assigned", description: "This worker is already assigned to this complaint.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase
       .from('complaint_assignments')
       .insert({ complaint_id: selectedComplaint.id, employee_id: addEmployeeId });
@@ -210,13 +266,18 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
       return;
     }
-    // Update lead assignee + status on complaints row if first assignment
-    await supabase.from('complaints').update({
-      assigned_employee_id: addEmployeeId,
+
+    // Only update assigned_employee_id if none is set yet; otherwise keep original
+    const updatePayload: Record<string, any> = {
       assignment_type: 'manual',
       status: 'in_progress',
       ...(newDeadline ? { deadline: newDeadline } : {}),
-    }).eq('id', selectedComplaint.id);
+    };
+    if (!selectedComplaint.assigned_employee_id) {
+      updatePayload.assigned_employee_id = addEmployeeId;
+    }
+    await supabase.from('complaints').update(updatePayload).eq('id', selectedComplaint.id);
+
     setAddEmployeeId("");
     toast({ title: "Employee Added", description: "Worker assigned successfully." });
     fetchAssignments(selectedComplaint.id);
@@ -560,6 +621,13 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
                         <span className="text-xs text-slate-500">{complaint.employees.name}</span>
                       )}
                     </div>
+                  ) : complaint.employees ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full w-fit">
+                        <Users className="w-3 h-3" /> Auto-assigned
+                      </span>
+                      <span className="text-xs text-slate-500">{complaint.employees.name}</span>
+                    </div>
                   ) : (
                     <span className="text-gray-400 text-sm">Unassigned</span>
                   )}
@@ -625,6 +693,18 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
                           : <Bot className="w-4 h-4" />}
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      title="Delete Complaint"
+                      disabled={deletingId === complaint.id}
+                      onClick={() => handleDelete(complaint.id)}
+                    >
+                      {deletingId === complaint.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Trash2 className="w-4 h-4" />}
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

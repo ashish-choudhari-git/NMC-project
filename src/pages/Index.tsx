@@ -66,85 +66,49 @@ const ProgressStepper = ({ status }: { status: string }) => {
   const steps = ["Filed", "Assigned", "In Progress", status === "rejected" ? "Rejected" : "Resolved"];
   const step = STATUS[status]?.step ?? 1;
   const isRejected = status === "rejected";
-  const CIRCLE = 32; // px  w-8
 
   return (
     <div className="w-full select-none">
-      {/*
-        Strategy:
-        - Outer div is relative, height = circle height
-        - Each step column is flex-1 (equal width)
-        - Circle is centered inside its column via margin:auto
-        - Connector lines are absolutely positioned, running from the
-          right-edge of one circle to the left-edge of the next.
-          Since every column is flex-1, the center of column i is at
-          (i + 0.5) / N * 100%. The connector runs from center_i + CIRCLE/2
-          to center_{i+1} - CIRCLE/2.
-        - Labels are a separate row below, same flex-1 columns.
-      */}
-
-      {/* Circles + connectors */}
-      <div className="relative flex items-center" style={{ height: CIRCLE }}>
-        {steps.map((_, i) => {
-          const active = i < step;
-          const rejected = isRejected && i === 3;
-          const isLast = i === steps.length - 1;
-          const N = steps.length;
-
-          // connector: from right of circle i to left of circle i+1
-          // center of col i = (i + 0.5) / N  (as fraction of total width)
-          // left of connector  = center_i  + CIRCLE/2 px
-          // right of connector = center_{i+1} - CIRCLE/2 px  → expressed as "right: ..."
-          const connectorLeft  = `calc(${((i + 0.5) / N) * 100}% + ${CIRCLE / 2 + 2}px)`;
-          const connectorRight = `calc(${(1 - (i + 1.5) / N) * 100}% + ${CIRCLE / 2 + 2}px)`;
-
-          return (
-            <div key={i} className="flex-1 flex justify-center relative" style={{ height: CIRCLE }}>
-              {/* Circle */}
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 z-10 relative ${
-                  rejected
-                    ? "bg-red-500 border-red-500 text-white"
-                    : active
-                    ? "bg-green-700 border-green-700 text-white"
-                    : "bg-white border-slate-200 text-slate-400"
-                }`}
-              >
-                {active && !rejected ? <CheckCircle className="w-4 h-4" /> : i + 1}
-              </div>
-
-              {/* Connector to next circle */}
-              {!isLast && (
-                <div
-                  className={`absolute top-1/2 h-0.5 -translate-y-1/2 transition-all duration-500 ${
-                    i < step - 1 ? "bg-green-600" : "bg-slate-200"
-                  }`}
-                  style={{
-                    left: connectorLeft,
-                    right: connectorRight,
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Labels  same flex-1 columns so they align perfectly under circles */}
-      <div className="flex w-full mt-2">
+      {/* Single row: circle ── line ── circle ── line ── circle ── line ── circle */}
+      <div className="flex items-center w-full">
         {steps.map((label, i) => {
           const active = i < step;
           const rejected = isRejected && i === 3;
+          const lineActive = i < step - 1;
+          const isLast = i === steps.length - 1;
           return (
-            <div key={i} className="flex-1 flex justify-center">
-              <span
-                className={`text-[10px] font-semibold text-center leading-tight px-1 ${
-                  rejected ? "text-red-500" : active ? "text-green-700" : "text-slate-400"
-                }`}
-              >
-                {label}
-              </span>
-            </div>
+            <>
+              {/* Circle + label */}
+              <div key={i} className="flex flex-col items-center flex-shrink-0">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${
+                    rejected
+                      ? "bg-red-500 border-red-500 text-white"
+                      : active
+                      ? "bg-green-700 border-green-700 text-white"
+                      : "bg-white border-slate-200 text-slate-400"
+                  }`}
+                >
+                  {active && !rejected ? <CheckCircle className="w-4 h-4" /> : i + 1}
+                </div>
+                <span
+                  className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
+                    rejected ? "text-red-500" : active ? "text-green-700" : "text-slate-400"
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+              {/* Connector line — flex-1 so all lines are equal width */}
+              {!isLast && (
+                <div
+                  key={`line-${i}`}
+                  className={`flex-1 h-0.5 mb-5 transition-all duration-500 ${
+                    lineActive ? "bg-green-600" : "bg-slate-200"
+                  }`}
+                />
+              )}
+            </>
           );
         })}
       </div>
