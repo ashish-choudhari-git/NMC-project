@@ -1,14 +1,15 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FileText, Calendar, MapPin, Award, Trash2, Recycle,
   CheckCircle, Clock, AlertCircle, XCircle, Users,
   ArrowRight, ChevronRight, X, User, Building2, ClipboardCheck,
-  UserCheck, ShieldCheck, Leaf, Bot, ShieldAlert, Loader2,
+  UserCheck, ShieldCheck, Leaf, Bot, ShieldAlert, Loader2, LocateFixed,
 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import MapView from "@/components/MapView";
 
 interface PublicComplaint {
   id: string;
@@ -29,6 +30,8 @@ interface PublicComplaint {
   ai_verification_score: number | null;
   ai_verification_reason: string | null;
   ai_verified_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface AssignedWorker {
@@ -150,6 +153,11 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [assignedWorkers, setAssignedWorkers] = useState<AssignedWorker[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "resolved">("all");
+  const [showMyLocation, setShowMyLocation] = useState(false);
+  const [myLat, setMyLat] = useState<number | null>(null);
+  const [myLng, setMyLng] = useState<number | null>(null);
+  const [myLocLoading, setMyLocLoading] = useState(false);
+  const [myLocError, setMyLocError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComplaints();
@@ -172,7 +180,7 @@ const Index = () => {
     const { data } = await supabase
       .from("complaints")
       .select(
-        `id, title, subcategory, status, priority, address, zone, created_at, deadline, resolved_at, resolved_photo_url, photo_url, assigned_employee_id, ai_verification_status, ai_verification_score, ai_verification_reason, ai_verified_at, employees:assigned_employee_id (name, job, employee_id)`
+        `id, title, subcategory, status, priority, address, zone, created_at, deadline, resolved_at, resolved_photo_url, photo_url, assigned_employee_id, ai_verification_status, ai_verification_score, ai_verification_reason, ai_verified_at, latitude, longitude, employees:assigned_employee_id (name, job, employee_id)`
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -552,9 +560,9 @@ const Index = () => {
                 {(["all", "active", "resolved"] as const).map((f) => (
                   <button
                     key={f}
-                    onClick={() => setStatusFilter(f)}
+                    onClick={() => { setStatusFilter(f); setShowMyLocation(false); }}
                     className={`px-4 py-2 text-xs font-bold tracking-wider uppercase transition-colors ${
-                      statusFilter === f
+                      statusFilter === f && !showMyLocation
                         ? "bg-green-700 text-white"
                         : "bg-white text-slate-500 hover:bg-green-50 hover:text-green-700"
                     }`}
@@ -563,6 +571,27 @@ const Index = () => {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={() => {
+                  setShowMyLocation(!showMyLocation);
+                  if (!showMyLocation && !myLat) {
+                    setMyLocLoading(true);
+                    setMyLocError(null);
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => { setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); setMyLocLoading(false); },
+                      () => { setMyLocError("Could not get your location."); setMyLocLoading(false); }
+                    );
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold tracking-wider uppercase rounded-lg border transition-colors ${
+                  showMyLocation
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-500 border-slate-200 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+              >
+                <LocateFixed className="w-3.5 h-3.5" />
+                My Location
+              </button>
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -571,6 +600,62 @@ const Index = () => {
               />
             </div>
           </div>
+
+          {/* ── MY LOCATION PANEL ───────────────────────────────────────── */}
+          {showMyLocation && (
+            <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <LocateFixed className="w-4 h-4 text-blue-600" />
+                <p className="font-bold text-slate-800">My Current Location</p>
+              </div>
+              {myLocLoading && (
+                <div className="flex items-center gap-2 text-slate-500 py-8 justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Detecting your location…</span>
+                </div>
+              )}
+              {myLocError && (
+                <p className="text-sm text-red-600 py-4 text-center">{myLocError}</p>
+              )}
+              {myLat && myLng && !myLocLoading && (
+                <>
+                  <p className="text-xs text-slate-500 mb-2">
+                    📍 {myLat.toFixed(5)}, {myLng.toFixed(5)}
+                    <button
+                      onClick={() => {
+                        setMyLocLoading(true); setMyLocError(null);
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => { setMyLat(pos.coords.latitude); setMyLng(pos.coords.longitude); setMyLocLoading(false); },
+                          () => { setMyLocError("Could not get location."); setMyLocLoading(false); }
+                        );
+                      }}
+                      className="ml-2 text-blue-600 underline text-xs"
+                    >Refresh</button>
+                  </p>
+                  <MapView
+                    lat={myLat}
+                    lng={myLng}
+                    height="340px"
+                    zoom={14}
+                    markers={[
+                      { lat: myLat, lng: myLng, label: "You are here", color: "#2563eb" },
+                      ...complaints
+                        .filter((c) => c.latitude && c.longitude)
+                        .map((c) => ({
+                          lat: c.latitude!,
+                          lng: c.longitude!,
+                          label: c.title,
+                          status: c.status,
+                        })),
+                    ]}
+                  />
+                  <p className="text-xs text-slate-400 mt-2 text-center">
+                    Blue pin = you · Coloured dots = complaints
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="space-y-3">
             {loading ? (
@@ -784,6 +869,20 @@ const Index = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Location Map */}
+                {selected.latitude && selected.longitude && (
+                  <div>
+                    <p className="section-label mb-3">Location on Map</p>
+                    <MapView
+                      lat={selected.latitude}
+                      lng={selected.longitude}
+                      height="220px"
+                      zoom={16}
+                      markers={[{ lat: selected.latitude, lng: selected.longitude, label: selected.title, status: selected.status }]}
+                    />
+                  </div>
+                )}
 
                 {/* Assigned Workers */}
                 {assignedWorkers.length > 0 ? (

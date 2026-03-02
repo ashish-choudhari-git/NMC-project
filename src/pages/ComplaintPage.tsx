@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Dog,
   Trees,
+  Loader2,
 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -140,6 +141,20 @@ const ComplaintPage = () => {
 
     setIsSubmitting(true);
 
+    // Auto-capture GPS silently; continue even if denied
+    let lat: number | null = null;
+    let lng: number | null = null;
+    if (navigator.geolocation) {
+      const pos = await new Promise<GeolocationPosition | null>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve(p),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+      if (pos) { lat = pos.coords.latitude; lng = pos.coords.longitude; }
+    }
+
     const { error } = await supabase
       .from('complaints')
       .insert({
@@ -152,6 +167,8 @@ const ComplaintPage = () => {
         reason: selectedReasons,
         photo_url: photoUrl || null,
         status: 'pending',
+        latitude: lat,
+        longitude: lng,
       });
 
     setIsSubmitting(false);
@@ -325,6 +342,7 @@ const ComplaintPage = () => {
                   <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
                 )}
               </div>
+
 
               <div className="space-y-2">
                 <Label>Reason</Label>

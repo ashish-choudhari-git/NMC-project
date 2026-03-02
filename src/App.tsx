@@ -19,6 +19,7 @@ import WasteSegregationPage from "./pages/WasteSegregationPage";
 import AwarenessPage from "./pages/AwarenessPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import MapsPage from "./pages/MapsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/waste-segregation" element={<WasteSegregationPage />} />
             <Route path="/awareness" element={<AwarenessPage />} />
             <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
+            <Route path="/maps" element={<MapsPage />} />
             <Route path="/services" element={<ZonesPage />} />
             <Route path="/timings" element={<ZonesPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -16,6 +16,7 @@ const navItems = [
   { path: "/about", label: "About" },
   { path: "/zones", label: "Zones" },
   { path: "/complaint", label: "File Complaint" },
+  { path: "/maps", label: "Maps" },
   { path: "/employees", label: "Workers" },
   { path: "/events", label: "Events" },
   { path: "/contact", label: "Contact" },

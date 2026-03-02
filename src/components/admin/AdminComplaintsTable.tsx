@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { verifyResolutionPhotos } from "@/lib/cleanScoreAI";
+import MapView from "@/components/MapView";
 import {
   Search,
   Filter,
@@ -76,6 +77,8 @@ interface Complaint {
   ai_verification_status: string | null;
   ai_verification_score: number | null;
   ai_verification_reason: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface Employee {
@@ -751,6 +754,20 @@ const AdminComplaintsTable = ({ onUpdate }: AdminComplaintsTableProps) => {
                   <p>{selectedComplaint.deadline ? format(new Date(selectedComplaint.deadline), 'PPpp') : 'Not set'}</p>
                 </div>
               </div>
+              {selectedComplaint.latitude && selectedComplaint.longitude && (
+                <div>
+                  <Label className="text-gray-600">Location on Map</Label>
+                  <div className="mt-2">
+                    <MapView
+                      lat={selectedComplaint.latitude}
+                      lng={selectedComplaint.longitude}
+                      height="220px"
+                      zoom={15}
+                      markers={[{ lat: selectedComplaint.latitude, lng: selectedComplaint.longitude, label: selectedComplaint.title, status: selectedComplaint.status }]}
+                    />
+                  </div>
+                </div>
+              )}
               {selectedComplaint.resolved_photo_url && (
                 <div>
                   <Label className="text-gray-600">Resolved Photo</Label>
