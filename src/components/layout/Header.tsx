@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User, ChevronDown, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import nmcLogo from "@/assets/nmc-logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +51,7 @@ const Header = () => {
             className="flex items-center gap-3 flex-shrink-0 group"
           >
             <img
-              src="/src/assets/nmc-logo.png"
+              src={nmcLogo}
               alt="Nagpur Municipal Corporation Logo"
               className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             />
