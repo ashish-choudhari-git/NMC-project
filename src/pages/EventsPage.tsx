@@ -8,11 +8,21 @@ import {
   ChevronRight, 
   CheckCircle,
   LogIn,
+  Plus,
 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +53,16 @@ const EventsPage = () => {
   const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createData, setCreateData] = useState({
+    name: "",
+    organizer: "",
+    venue: "",
+    date: "",
+    category: "",
+    description: "",
+  });
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, role } = useAuth();
@@ -50,6 +70,7 @@ const EventsPage = () => {
   // Citizens and employees can register; admins only view
   // Also handle the case where role is still loading (null) — don't block logged-in users
   const canRegister = !!user && role !== "admin";
+  const canCreateEvent = !!user && role === "citizen";
 
   useEffect(() => {
     fetchEvents();
@@ -154,6 +175,54 @@ const EventsPage = () => {
     fetchRegistrations();
   };
 
+  const handleCreateEvent = async () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to create an event.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!createData.name || !createData.organizer || !createData.venue || !createData.date) {
+      toast({
+        title: "Missing Fields",
+        description: "Name, organizer, venue and date are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    const { error } = await supabase.from("events").insert({
+      name: createData.name,
+      organizer: createData.organizer,
+      description: createData.description || null,
+      venue: createData.venue,
+      date: createData.date,
+      category: createData.category || null,
+      created_by: user.id,
+      is_approved: true,
+    });
+    setIsCreating(false);
+
+    if (error) {
+      toast({
+        title: "Create Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({ title: "Event Created", description: "Your event has been published." });
+    setIsCreateDialogOpen(false);
+    setCreateData({ name: "", organizer: "", venue: "", date: "", category: "", description: "" });
+    fetchEvents();
+  };
+
   const isRegistered = (eventId: string) => {
     return registrations.some(r => r.event_id === eventId);
   };
@@ -183,7 +252,7 @@ const EventsPage = () => {
           <div className="nmc-icon-box-accent">
             <Calendar className="w-6 h-6" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-display text-3xl font-bold text-foreground">
               Community Events
             </h1>
@@ -191,6 +260,12 @@ const EventsPage = () => {
               Join civic and environmental events across Nagpur
             </p>
           </div>
+          {canCreateEvent && (
+            <Button className="nmc-btn-primary gap-2" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Create Event
+            </Button>
+          )}
         </div>
 
         {/* Guest banner */}
@@ -200,7 +275,7 @@ const EventsPage = () => {
               <span className="font-semibold text-foreground">Want to participate?</span>{" "}
               Login as a citizen or employee to register for events.
             </p>
-            <Button size="sm" className="nmc-btn-primary gap-2 shrink-0" onClick={() => navigate("/citizen-auth")}>
+            <Button size="sm" className="nmc-btn-primary gap-2 shrink-0" onClick={() => navigate("/auth")}>
               <LogIn className="w-4 h-4" />
               Login to Register
             </Button>
@@ -349,7 +424,7 @@ const EventsPage = () => {
                               size="sm"
                               variant="outline"
                               className="gap-1"
-                              onClick={() => navigate("/citizen-auth")}
+                              onClick={() => navigate("/auth")}
                             >
                               <LogIn className="w-3 h-3" />
                               Login to Register
@@ -392,6 +467,77 @@ const EventsPage = () => {
             </div>
           )}
         </div>
+
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Create Community Event</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Event Name</Label>
+                <Input
+                  value={createData.name}
+                  onChange={(e) => setCreateData((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Clean-up Drive - Dharampeth"
+                />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Organizer</Label>
+                  <Input
+                    value={createData.organizer}
+                    onChange={(e) => setCreateData((p) => ({ ...p, organizer: e.target.value }))}
+                    placeholder="Your name / group"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Input
+                    value={createData.category}
+                    onChange={(e) => setCreateData((p) => ({ ...p, category: e.target.value }))}
+                    placeholder="Cleanliness Drive / Awareness"
+                  />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Venue</Label>
+                  <Input
+                    value={createData.venue}
+                    onChange={(e) => setCreateData((p) => ({ ...p, venue: e.target.value }))}
+                    placeholder="Location"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={createData.date}
+                    onChange={(e) => setCreateData((p) => ({ ...p, date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={createData.description}
+                  onChange={(e) => setCreateData((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Add event details..."
+                  rows={4}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="nmc-btn-primary" onClick={handleCreateEvent} disabled={isCreating}>
+                {isCreating ? "Creating..." : "Create Event"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

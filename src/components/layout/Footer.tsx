@@ -9,22 +9,18 @@ const Footer = () => (
         {/* Brand */}
         <div>
   <div className="flex items-center gap-3 mb-3">
-    
-    {/* Official NMC Logo */}
-    <img
-      src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Nagpur_Municipal_Corporation_logo.png/250px-Nagpur_Municipal_Corporation_logo.png"
-      alt="Nagpur Municipal Corporation Logo"
-      className="w-10 h-10 object-contain bg-white rounded p-1"
-    />
+    <div className="w-10 h-10 rounded-lg bg-green-600 text-white font-bold text-sm flex items-center justify-center">
+      CN
+    </div>
 
     <span className="font-semibold text-white text-sm leading-tight">
-      Nagpur Municipal Corporation
+      Clean Nagpur
     </span>
   </div>
 
   <p className="text-slate-400 text-sm leading-relaxed">
-    Nagpur Municipal Corporation — committed to clean, transparent, and 
-    sustainable civic services for every citizen of Nagpur.
+    Clean Nagpur is a community-driven civic platform focused on cleaner,
+    transparent, and sustainable city services.
   </p>
 </div>
 
@@ -103,10 +99,10 @@ const Footer = () => (
       {/* Bottom Bar */}
       <div className="border-t border-slate-700 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
         <p>
-          © {new Date().getFullYear()} Nagpur Municipal Corporation. 
+          © {new Date().getFullYear()} Clean Nagpur. 
           All Rights Reserved.
         </p>
-        <p>Official Civic Portal of Nagpur City.</p>
+        <p>Community Civic Platform for Nagpur City.</p>
       </div>
     </div>
   </footer>

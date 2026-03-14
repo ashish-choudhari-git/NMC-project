@@ -451,7 +451,7 @@ const Index = () => {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 bg-green-700 text-white rounded-full px-4 py-1.5 mb-6">
                 <Leaf className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold tracking-widest uppercase">Nagpur Municipal Corporation</span>
+                <span className="text-xs font-bold tracking-widest uppercase">Clean Nagpur Community Project</span>
               </div>
 
               <h1 className="nmc-serif text-4xl md:text-6xl text-slate-900 leading-tight mb-4">
@@ -461,7 +461,7 @@ const Index = () => {
               </h1>
 
               <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-                The NMC digital grievance portal lets every citizen report civic issues,
+                The Clean Nagpur digital grievance portal lets every citizen report civic issues,
                 track their resolution in real time, and engage with community clean-up events.
               </p>
 
@@ -715,7 +715,7 @@ const Index = () => {
               {([
                 { title: "File a Complaint",  desc: "Report garbage, drainage & more.",        icon: FileText,  path: "/complaint",  color: "text-green-700", bg: "bg-green-50"  },
                 { title: "Zone Schedules",    desc: "Check collection timings for your area.", icon: MapPin,    path: "/zones",      color: "text-amber-700", bg: "bg-amber-50"  },
-                { title: "Events & Drives",   desc: "Join NMC cleanliness drives near you.",   icon: Calendar,  path: "/events",     color: "text-purple-700",bg: "bg-purple-50" },
+                { title: "Events & Drives",   desc: "Join local cleanliness drives near you.", icon: Calendar,  path: "/events",     color: "text-purple-700",bg: "bg-purple-50" },
                 { title: "Appreciate Workers",desc: "Rate our sanitation field workers.",       icon: Award,     path: "/employees",  color: "text-slate-700", bg: "bg-slate-200" },
               ] as { title: string; desc: string; icon: React.ElementType; path: string; color: string; bg: string }[]).map((s) => {
                 const Icon = s.icon;
@@ -747,7 +747,7 @@ const Index = () => {
               <p className="section-label mb-3 text-green-300 ">Initiative</p>
               <h2 className="nmc-serif text-2xl md:text-3xl mb-4 leading-snug text-white">About This Project</h2>
               <p className="text-green-100 text-sm leading-relaxed mb-5">
-                Swachh Nagpur is an initiative by the Nagpur Municipal Corporation to digitise civic complaint management.
+                Clean Nagpur is a citizen-first initiative to digitise civic complaint management.
                 Citizens can report issues like uncollected garbage, broken drains, toilet upkeep, or construction debris 
                 from anywhere, on any device.
               </p>

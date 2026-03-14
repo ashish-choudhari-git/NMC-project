@@ -376,6 +376,13 @@ CREATE POLICY "Users can update their own events" ON public.events
     OR public.has_role(auth.uid(), 'admin')
   );
 
+DROP POLICY IF EXISTS "Users can delete their own events" ON public.events;
+CREATE POLICY "Users can delete their own events" ON public.events
+  FOR DELETE USING (
+    auth.uid() = created_by
+    OR public.has_role(auth.uid(), 'admin')
+  );
+
 -- event_registrations policies
 DROP POLICY IF EXISTS "Users can view their own registrations" ON public.event_registrations;
 CREATE POLICY "Users can view their own registrations" ON public.event_registrations

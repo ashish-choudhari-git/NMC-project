@@ -50,7 +50,7 @@ const Header = () => {
             className="flex items-center gap-3 flex-shrink-0 group"
           >
             <img
-              src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Nagpur_Municipal_Corporation_logo.png/250px-Nagpur_Municipal_Corporation_logo.png"
+              src="/src/assets/nmc-logo.png"
               alt="Nagpur Municipal Corporation Logo"
               className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             />
@@ -60,7 +60,7 @@ const Header = () => {
                 Mission Clean
               </p>
               <p className="text-xs text-slate-500">
-                Nagpur Municipal Corporation
+               Clean Nagpur
               </p>
             </div>
           </Link>
